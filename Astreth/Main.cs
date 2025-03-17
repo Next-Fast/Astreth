@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Reflection;
 using Microsoft.Extensions.Logging;
 using NextBepLoader.Core.Contract;
 using NextBepLoader.Core.Contract.Attributes;
@@ -15,6 +16,7 @@ public class AstrethPlugin(ILogger<AstrethPlugin> logger) : BasePlugin
         Console.WriteAscii("Next Fast", ColorTranslator.FromHtml("#459bf7"));
         Console.WriteAscii("Astreth", Color.CornflowerBlue);
         
-        
+        logger.LogInformation("Astreth Plugin Loaded");
+        logger.LogInformation("Version:{version}", Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyVersionAttribute>()?.Version ?? " Unknown");
     }
 }

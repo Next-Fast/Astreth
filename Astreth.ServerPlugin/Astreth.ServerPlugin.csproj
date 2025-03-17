@@ -4,15 +4,11 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Version>1.0.0</Version>
-        <Authors>Next-Fast</Authors>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../Astreth.Api/Astreth.Api.csproj"/>
+        <PackageReference Include="NextImpostor.Api.Extension" Version="1.10.2-ci.20" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.0"/>
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Include="Colorful.Console" Version="1.2.15" />
-    </ItemGroup>
 </Project>
