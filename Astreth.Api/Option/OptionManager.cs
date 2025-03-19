@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Il2CppSystem.Text;
 using Microsoft.Extensions.Logging;
 
@@ -10,14 +11,15 @@ public class OptionManager(ILogger<OptionManager> logger)
     public OptionManager SaveTo(string path)
     {
         var builder = new StringBuilder();
-        builder.Append("Astreth@Options{");
+        builder.AppendLine("Astreth@Options{");
         
         foreach (var option in AllOptions)
         {
-            builder.AppendLine(option.Serialize() + ";");
+            var content = option.Serialize();
+            builder.AppendLine($"${option.Type}:{option.OptionId}:{content};");
         }
 
-        builder.Append("}");
+        builder.AppendLine("}");
         File.WriteAllText(path, builder.ToString());
         return this;
     }
@@ -30,33 +32,64 @@ public class OptionManager(ILogger<OptionManager> logger)
         var text = File.ReadAllText(path);
         if (!text.StartsWith("Astreth@Options{") || !text.EndsWith('}'))
             return this;
-
-        AllOptions = [];
+        
         var optionsText = text.Substring(text.IndexOf('{'), text.Length - 1);
         var options = optionsText.Split(';');
         foreach (var option in options)
         {
-            var part = option.Split(':');
-            var type = part[0];
-            if (!type.StartsWith('$'))
-                continue;
-
-            var create = createOptionFromType(type.Remove(0));
-            if (create == null) 
+            var part = option
+                .Trim()
+                .Trim('\n')
+                .Split(':');
+            
+            if (!part[0].StartsWith('$'))
                 continue;
             
+            var type = part[0].Remove(0);
             var optionId = part[1];
-            var value = part[2];
-            if (create.Deserialize(optionId, value))
+            var content = part[2];
+
+            var get = GetOption(optionId);
+            if (get != null)
             {
-                AllOptions.Add(create);
+                if (get.Type != type)
+                {
+                    AllOptions.Remove(get);
+                    goto tryCreate;
+                }
+                
+                if (!get.Deserialize(content))
+                {
+                    logger.LogWarning("Deserialization failed for option {OptionId}", optionId);
+                }
+                
+                continue;
             }
+            
+            tryCreate:            
+            if (!TryCreateOption(type, optionId, content, out var create))
+            {
+                continue;
+            }
+            
+            AllOptions.Add(create);
         }
         
         return this;
     }
 
+    private static bool TryCreateOption(string type, string optionId, string content,[MaybeNullWhen(false)]out IOption option)
+    {
+        option = type switch
+        {
+            "bool" => new BoolOption(optionId),
+            "float" => new FloatOption(optionId),
+            _ => null
+        };
 
+        return option != null && option.Deserialize(content);
+    }
+    
     public OptionManager RegisterOption(IOption option)
     {
         if (AllOptions.Any(n => n.OptionId == option.OptionId))
@@ -84,13 +117,60 @@ public class OptionManager(ILogger<OptionManager> logger)
     {
         return AllOptions.FirstOrDefault(o => o.OptionId == optionId);
     }
+}
 
-    private static IOption? createOptionFromType(string type)
+public interface IOptionCreator
+{
+    public IOptionCreator AddBoolOption(string optionId, bool value);
+    public IOptionCreator AddNumberOption<T>(string optionId, T value, T Min, T Max, T Step) where T : unmanaged;
+    
+    public IOptionCreator AddStringOption(string optionId, string[] value, int defaultIndex = 0);
+    
+    public IOptionCreator AddEnumOption<T>(string optionId, T value) where T : Enum;
+    
+    public void RegisterToManager(OptionManager manager);
+}
+
+public class BaseOptionCreator : IOptionCreator
+{
+    static BaseOptionCreator()
     {
-        return type switch
+        INumberOptionCreator<float>.Instance = new FloatOption.FloatOptionCreator();
+    }
+    
+    
+    private List<IOption> Options { get; } = [];
+    public virtual IOptionCreator AddBoolOption(string optionId, bool value)
+    {
+        Options.Add(new BoolOption(optionId, value));
+        return this;
+    }
+
+    public virtual IOptionCreator AddNumberOption<T>(string optionId, T value, T min, T max, T step) where T : unmanaged
+    {
+        var create = INumberOptionCreator<T>.Instance?.Create(optionId, value, min, max, step);
+        if (create == null)
         {
-            "bool" => new BoolOption(),
-            _ => null
-        };
+            Log?.LogWarning($"No number option creator found for type {nameof(T)}");
+            return this;
+        }
+
+        Options.Add(create);
+        return this;
+    }
+
+    public virtual IOptionCreator AddStringOption(string optionId, string[] value, int defaultIndex = 0)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual IOptionCreator AddEnumOption<T>(string optionId, T value) where T : Enum
+    {
+        throw new NotImplementedException();
+    }
+
+    public void RegisterToManager(OptionManager manager)
+    {
+        throw new NotImplementedException();
     }
 }

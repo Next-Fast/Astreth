@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Astreth.Api;
+namespace Astreth.Api.Attributes;
 
 public class AttributeRegister
 {

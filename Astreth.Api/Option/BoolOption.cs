@@ -1,30 +1,22 @@
 namespace Astreth.Api.Option;
 
-public class BoolOption : IOption
+public class BoolOption(string optionId) : IOption
 {
-    public BoolOption() { }
 
-    public BoolOption(string optionId, bool value)
+    public BoolOption(string optionId, bool value) : this(optionId)
     {
         OptionId = optionId;
-        Value = value;
-    }
-    
-    public string Serialize()
-    {
-        return $"${Type}:{OptionId}:{Value}";
     }
 
-    public bool Deserialize(string optionId, string content)
+    public string Serialize() => Value.ToString();
+    public bool Deserialize(string content)
     {
         if (!bool.TryParse(content, out var value))
         {
             return false;
         }
-        
-        OptionId = optionId;
+
         Value = value;
-        
         return true;
     }
 
@@ -32,5 +24,5 @@ public class BoolOption : IOption
 
     public string Type => "bool";
     public bool Value { get; private set; }
-    public string OptionId { get; private set; } = "Unknown";
+    public string OptionId { get; } = optionId;
 }
