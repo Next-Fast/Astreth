@@ -4,7 +4,7 @@ namespace Astreth.Api.Option;
 
 public static class OptionExtension
 {
-    internal static bool TryParseNumberOption<T>(this string content, Func<string, (bool, T)> Parse, [MaybeNullWhen(false)]out List<T> result)
+    /*internal static bool TryParseNumberOption<T>(this string content, Func<string, (bool, T)> Parse, [MaybeNullWhen(false)]out List<T> result)
     {
         var list = new List<T>();
         var values = content.Split('-');
@@ -23,5 +23,5 @@ public static class OptionExtension
 
         result = list;
         return true;
-    }
+    }*/
 }

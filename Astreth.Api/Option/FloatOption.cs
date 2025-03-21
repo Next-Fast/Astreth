@@ -18,12 +18,24 @@ public class FloatOption(string optionId) : INumberOption<float>
         Value = value;
     }
     
-    public string Serialize()
+    
+    public bool Deserialize(string content)
     {
-        return $"{Min}-{Max}-{Step}-{Value}";
+        if (!float.TryParse(content, out var result))
+        {
+            return false;
+        }
+
+        if (result < Min || result > Max)
+        {
+            return false;
+        }
+        
+        Value = result;
+        return true;
     }
 
-    public bool Deserialize(string content)
+    /*public bool Deserialize(string content)
     {
         if (!content.TryParseNumberOption(
                 text => 
@@ -44,13 +56,15 @@ public class FloatOption(string optionId) : INumberOption<float>
         Step = values[2];
         Value = values[3];
         return true;
-    }
+    }*/
     
     public float Min { get; private set; }
     public float Max { get; private set; }
     public float Step { get; private set; }
-    public float Value { get; set; }
+    public float Value { get; private set; }
 
     public string OptionId { get; } = optionId;
     public string Type => "float";
+    
+    public static explicit operator float(FloatOption option) => option.Value;
 }

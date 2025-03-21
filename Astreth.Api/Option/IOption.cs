@@ -19,4 +19,9 @@ public interface INumberOption<out T> : IOption where T : unmanaged
     public T Step { get; }
     
     public T Value { get; }
+
+    string ISerializable<IOption>.Serialize()
+    {
+        return $"{Value}";
+    }
 }

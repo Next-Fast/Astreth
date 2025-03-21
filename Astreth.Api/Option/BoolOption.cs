@@ -2,7 +2,6 @@ namespace Astreth.Api.Option;
 
 public class BoolOption(string optionId) : IOption
 {
-
     public BoolOption(string optionId, bool value) : this(optionId)
     {
         OptionId = optionId;
@@ -25,4 +24,6 @@ public class BoolOption(string optionId) : IOption
     public string Type => "bool";
     public bool Value { get; private set; }
     public string OptionId { get; } = optionId;
+    
+    public static explicit operator bool(BoolOption option) => option.Value;
 }

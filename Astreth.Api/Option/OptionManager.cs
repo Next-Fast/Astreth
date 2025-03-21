@@ -50,35 +50,23 @@ public class OptionManager(ILogger<OptionManager> logger)
             var content = part[2];
 
             var get = GetOption(optionId);
-            if (get != null)
-            {
-                if (get.Type != type)
-                {
-                    AllOptions.Remove(get);
-                    goto tryCreate;
-                }
-                
-                if (!get.Deserialize(content))
-                {
-                    logger.LogWarning("Deserialization failed for option {OptionId}", optionId);
-                }
-                
-                continue;
-            }
+            if (get == null) continue;
             
-            tryCreate:            
-            if (!TryCreateOption(type, optionId, content, out var create))
+            if (get.Type != type)
             {
                 continue;
             }
-            
-            AllOptions.Add(create);
+                
+            if (!get.Deserialize(content))
+            {
+                logger.LogWarning("Deserialization failed for option {OptionId}", optionId);
+            }
         }
         
         return this;
     }
 
-    private static bool TryCreateOption(string type, string optionId, string content,[MaybeNullWhen(false)]out IOption option)
+    /*private static bool TryCreateOption(string type, string optionId, string content,[MaybeNullWhen(false)]out IOption option)
     {
         option = type switch
         {
@@ -88,7 +76,7 @@ public class OptionManager(ILogger<OptionManager> logger)
         };
 
         return option != null && option.Deserialize(content);
-    }
+    }*/
     
     public OptionManager RegisterOption(IOption option)
     {
@@ -124,9 +112,11 @@ public interface IOptionCreator
     public IOptionCreator AddBoolOption(string optionId, bool value);
     public IOptionCreator AddNumberOption<T>(string optionId, T value, T Min, T Max, T Step) where T : unmanaged;
     
-    public IOptionCreator AddStringOption(string optionId, string[] value, int defaultIndex = 0);
+    public IOptionCreator AddMultipleStringOption(string optionId, string[] options, int[] selectedIndex);
     
-    public IOptionCreator AddEnumOption<T>(string optionId, T value) where T : Enum;
+    public IOptionCreator AddSingleStringOption(string optionId, string[] options, int defaultIndex = 0);
+    
+    public IOptionCreator AddEnumOption<T>(string optionId, T value) where T : struct, Enum;
     
     public void RegisterToManager(OptionManager manager);
 }
@@ -136,6 +126,7 @@ public class BaseOptionCreator : IOptionCreator
     static BaseOptionCreator()
     {
         INumberOptionCreator<float>.Instance = new FloatOption.FloatOptionCreator();
+        INumberOptionCreator<int>.Instance = new IntOption.IntOptionCreator();
     }
     
     
@@ -159,18 +150,27 @@ public class BaseOptionCreator : IOptionCreator
         return this;
     }
 
-    public virtual IOptionCreator AddStringOption(string optionId, string[] value, int defaultIndex = 0)
+    public IOptionCreator AddMultipleStringOption(string optionId, string[] options, int[] selectedIndex)
     {
         throw new NotImplementedException();
     }
 
-    public virtual IOptionCreator AddEnumOption<T>(string optionId, T value) where T : Enum
+    public IOptionCreator AddSingleStringOption(string optionId, string[] options, int defaultIndex = 0)
     {
         throw new NotImplementedException();
+    }
+
+    public virtual IOptionCreator AddEnumOption<T>(string optionId, T value) where T : struct, Enum
+    {
+        Options.Add(new EnumOption<T>(optionId, value));
+        return this;
     }
 
     public void RegisterToManager(OptionManager manager)
     {
-        throw new NotImplementedException();
+        foreach (var option in Options)
+        {
+            manager.RegisterOption(option);
+        }
     }
 }

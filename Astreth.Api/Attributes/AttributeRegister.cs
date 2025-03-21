@@ -11,6 +11,7 @@ public class AttributeRegister
 
     public AttributeRegister Register<T>(Action<Type, T> OnRegister) where T : Attribute
     {
+        
         return this;
     }
 }
